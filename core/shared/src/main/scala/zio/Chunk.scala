@@ -94,6 +94,21 @@ sealed abstract class Chunk[+A] extends ChunkLike[A] { self =>
   final def ++[A1 >: A](that: NonEmptyChunk[A1]): NonEmptyChunk[A1] =
     that.prepend(self)
 
+  sealed trait Endianness
+  object Endianness {
+    case object BigEndian extends Endianness
+    case object LittleEndian extends Endianness
+  }
+
+  def asBytes(e: Endianness)(implicit ev: A <:< Int): Chunk[Byte] = {
+    self.map(ev).flatMap { i =>
+      e match {
+        case Endianness.BigEndian    => Chunk.fromArray(BigInt(i).toByteArray)
+        case Endianness.LittleEndian => Chunk.fromArray(BigInt(i).toByteArray.reverse)
+      }
+    }
+  }
+
   /**
    * Converts a chunk of bytes to a chunk of bits.
    */

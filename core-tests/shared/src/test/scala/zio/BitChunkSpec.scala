@@ -6,6 +6,20 @@ import zio.test._
 
 object BitChunkSpec extends ZIOBaseSpec {
 
+  val i = 20
+
+  val ibytes = BigInt(i).toByteArray // big-endian natively
+  val lbytes = BigInt(20L).toByteArray
+
+
+
+
+
+  val genIntChunk: Gen[Random with Sized, Chunk[Int]] =
+    for {
+      ints <- Gen.listOf(Gen.anyInt)
+    } yield Chunk.fromIterable(ints)
+
   val genByteChunk: Gen[Random with Sized, Chunk[Byte]] =
     for {
       bytes <- Gen.listOf(Gen.anyByte)
