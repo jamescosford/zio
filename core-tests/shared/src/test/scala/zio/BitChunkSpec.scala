@@ -13,6 +13,12 @@ object BitChunkSpec extends ZIOBaseSpec {
 
 
 
+  println(Chunk(Int.MaxValue).asBytesC(Chunk.Endianness.BigEndian).asBits.toBinaryString)
+  println(Chunk(Int.MinValue).asBytesC(Chunk.Endianness.BigEndian).asBits.toBinaryString)
+
+  println(Chunk(Int.MaxValue).asBytesC(Chunk.Endianness.LittleEndian).asBits.toBinaryString)
+  println(Chunk(Int.MinValue).asBytesC(Chunk.Endianness.LittleEndian).asBits.toBinaryString)
+
 
 
   val genIntChunk: Gen[Random with Sized, Chunk[Int]] =

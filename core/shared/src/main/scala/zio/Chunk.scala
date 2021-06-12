@@ -94,18 +94,34 @@ sealed abstract class Chunk[+A] extends ChunkLike[A] { self =>
   final def ++[A1 >: A](that: NonEmptyChunk[A1]): NonEmptyChunk[A1] =
     that.prepend(self)
 
-  sealed trait Endianness
-  object Endianness {
-    case object BigEndian extends Endianness
-    case object LittleEndian extends Endianness
-  }
+  import Chunk.Endianness
 
-  def asBytes(e: Endianness)(implicit ev: A <:< Int): Chunk[Byte] = {
+  // def asBytes(e: Endianness)(implicit ev: A <:< Long): Chunk[Byte] = ???
+  def asBytesA(e: Endianness)(implicit ev: A <:< Int): Chunk[Byte] = {
     self.map(ev).flatMap { i =>
       e match {
         case Endianness.BigEndian    => Chunk.fromArray(BigInt(i).toByteArray)
         case Endianness.LittleEndian => Chunk.fromArray(BigInt(i).toByteArray.reverse)
       }
+    }
+  }
+
+  def asBytesC(e: Endianness)(implicit ev: A <:< Int): Chunk[Byte] =
+    self.map(ev).flatMap { i =>
+      Chunk.fromArray(toByteArray(i, e))
+    }
+
+  def toByteArray(i: Int, e: Endianness): Array[Byte] =
+    (e match {
+      case Endianness.BigEndian    => (3 to 0 by -1)
+      case Endianness.LittleEndian => (0 to 3)
+    }).map { b =>
+      (i >>> b*8).toByte
+    }.toArray
+
+  def asBytesB(e: Endianness)(implicit ev: A <:< Int): Chunk[Byte] = {
+    self.map(ev).flatMap { i =>
+       Chunk.fromByteBuffer(ByteBuffer.allocate(4).putInt(i))
     }
   }
 
@@ -1114,6 +1130,13 @@ sealed abstract class Chunk[+A] extends ChunkLike[A] { self =>
 }
 
 object Chunk extends ChunkFactory with ChunkPlatformSpecific {
+
+
+  sealed trait Endianness
+  object Endianness {
+    case object BigEndian extends Endianness
+    case object LittleEndian extends Endianness
+  }
 
   /**
    * Returns the empty chunk.
