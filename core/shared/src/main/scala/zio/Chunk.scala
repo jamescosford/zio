@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.tailrec
 import scala.collection.mutable.Builder
 import scala.reflect.{ClassTag, classTag}
+import zio.Chunk.Endianness.BigEndian
+import zio.Chunk.Endianness.LittleEndian
 
 /**
  * A `Chunk[A]` represents a chunk of values of type `A`. Chunks are designed
@@ -96,34 +98,11 @@ sealed abstract class Chunk[+A] extends ChunkLike[A] { self =>
 
   import Chunk.Endianness
 
-  // def asBytes(e: Endianness)(implicit ev: A <:< Long): Chunk[Byte] = ???
-  def asBytesA(e: Endianness)(implicit ev: A <:< Int): Chunk[Byte] = {
-    self.map(ev).flatMap { i =>
-      e match {
-        case Endianness.BigEndian    => Chunk.fromArray(BigInt(i).toByteArray)
-        case Endianness.LittleEndian => Chunk.fromArray(BigInt(i).toByteArray.reverse)
-      }
-    }
-  }
-
-  def asBytesC(e: Endianness)(implicit ev: A <:< Int): Chunk[Byte] =
-    self.map(ev).flatMap { i =>
-      Chunk.fromArray(toByteArray(i, e))
-    }
-
-  def toByteArray(i: Int, e: Endianness): Array[Byte] =
-    (e match {
-      case Endianness.BigEndian    => (3 to 0 by -1)
-      case Endianness.LittleEndian => (0 to 3)
-    }).map { b =>
-      (i >>> b*8).toByte
-    }.toArray
-
-  def asBytesB(e: Endianness)(implicit ev: A <:< Int): Chunk[Byte] = {
-    self.map(ev).flatMap { i =>
-       Chunk.fromByteBuffer(ByteBuffer.allocate(4).putInt(i))
-    }
-  }
+  /**
+    * Converts a chunk of 
+    */
+  def asBytes[A1 >: A](e: Endianness)(implicit ev: Chunk.ToByteArray[A1]): Chunk[Byte] =
+    self.flatMap(a => ev.toByteArray(a, e))
 
   /**
    * Converts a chunk of bytes to a chunk of bits.
@@ -1134,9 +1113,49 @@ object Chunk extends ChunkFactory with ChunkPlatformSpecific {
 
   sealed trait Endianness
   object Endianness {
-    case object BigEndian extends Endianness
+    case object BigEndian    extends Endianness
     case object LittleEndian extends Endianness
   }
+
+  /**
+    * Converts a value (eg. Int, Long) to an Array of bytes, reading according
+    * to the specified endian-ness of the input.
+    * Results are Big-Endian.
+    */
+  sealed trait ToByteArray[A] {
+    def toByteArray(a: A, e: Endianness): Array[Byte]
+  }
+
+  object ToByteArray {
+
+    implicit val intToByteArray: ToByteArray[Int] = new ToByteArray[Int] {
+      def byteIndices(e: Endianness): Range = 
+        e match {
+          case BigEndian    => (3 to 0 by -1)
+          case LittleEndian => (0 to 3)
+        }
+
+      override def toByteArray(i: Int, e: Endianness): Array[Byte] =
+        byteIndices(e).map { b =>
+          (i >>> b*8).toByte
+        }.toArray
+    }
+
+    implicit val longToByteArray: ToByteArray[Long] = new ToByteArray[Long] {
+      def byteIndices(e: Endianness): Range =
+        e match {
+          case BigEndian    => (7 to 0 by -1)
+          case LittleEndian => (0 to 7)
+        }
+      
+      override def toByteArray(i: Long, e: Endianness): Array[Byte] =
+        byteIndices(e).map { b =>
+          (i >>> b*8).toByte
+        }.toArray
+    }
+
+  }
+
 
   /**
    * Returns the empty chunk.

@@ -12,12 +12,17 @@ object BitChunkSpec extends ZIOBaseSpec {
   val lbytes = BigInt(20L).toByteArray
 
 
+  println(Chunk(Int.MaxValue).asBytes(Chunk.Endianness.BigEndian).asBits.toBinaryString)
+  println(Chunk(Int.MinValue).asBytes(Chunk.Endianness.BigEndian).asBits.toBinaryString)
 
-  println(Chunk(Int.MaxValue).asBytesC(Chunk.Endianness.BigEndian).asBits.toBinaryString)
-  println(Chunk(Int.MinValue).asBytesC(Chunk.Endianness.BigEndian).asBits.toBinaryString)
+  println(Chunk(Int.MaxValue).asBytes(Chunk.Endianness.LittleEndian).asBits.toBinaryString)
+  println(Chunk(Int.MinValue).asBytes(Chunk.Endianness.LittleEndian).asBits.toBinaryString)
 
-  println(Chunk(Int.MaxValue).asBytesC(Chunk.Endianness.LittleEndian).asBits.toBinaryString)
-  println(Chunk(Int.MinValue).asBytesC(Chunk.Endianness.LittleEndian).asBits.toBinaryString)
+  println(Chunk(Long.MaxValue).asBytes(Chunk.Endianness.BigEndian).asBits.toBinaryString)
+  println(Chunk(Long.MinValue).asBytes(Chunk.Endianness.BigEndian).asBits.toBinaryString)
+
+  println(Chunk(Long.MaxValue).asBytes(Chunk.Endianness.LittleEndian).asBits.toBinaryString)
+  println(Chunk(Long.MinValue).asBytes(Chunk.Endianness.LittleEndian).asBits.toBinaryString)
 
 
 
