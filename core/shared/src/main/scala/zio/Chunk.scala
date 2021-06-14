@@ -99,10 +99,17 @@ sealed abstract class Chunk[+A] extends ChunkLike[A] { self =>
   import Chunk.Endianness
 
   /**
-    * Converts a chunk of 
+    * Converts a chunk to bytes using an implementation of Chunk.ToByteArray, extracting
+    * the data according to the specified Endianness. Results are Big-Endian.
     */
   def asBytes[A1 >: A](e: Endianness)(implicit ev: Chunk.ToByteArray[A1]): Chunk[Byte] =
-    self.flatMap(a => ev.toByteArray(a, e))
+    self.flatMap(ev.toByteArray(_, e))
+
+  /**
+   * Converts a chunk of values to bits via of Chunk.ToByteArray
+   */
+  final def asBits[A1 >: A](e: Endianness)(implicit ev: Chunk.ToByteArray[A1]): Chunk[Boolean] =
+    self.flatMap(ev.toByteArray(_, e)).asBits
 
   /**
    * Converts a chunk of bytes to a chunk of bits.
@@ -1129,27 +1136,27 @@ object Chunk extends ChunkFactory with ChunkPlatformSpecific {
   object ToByteArray {
 
     implicit val intToByteArray: ToByteArray[Int] = new ToByteArray[Int] {
-      def byteIndices(e: Endianness): Range = 
+      def shifts(e: Endianness): Range = 
         e match {
           case BigEndian    => (3 to 0 by -1)
           case LittleEndian => (0 to 3)
         }
 
       override def toByteArray(i: Int, e: Endianness): Array[Byte] =
-        byteIndices(e).map { b =>
+        shifts(e).map { b =>
           (i >>> b*8).toByte
         }.toArray
     }
 
     implicit val longToByteArray: ToByteArray[Long] = new ToByteArray[Long] {
-      def byteIndices(e: Endianness): Range =
+      def shifts(e: Endianness): Range =
         e match {
           case BigEndian    => (7 to 0 by -1)
           case LittleEndian => (0 to 7)
         }
       
       override def toByteArray(i: Long, e: Endianness): Array[Byte] =
-        byteIndices(e).map { b =>
+        shifts(e).map { b =>
           (i >>> b*8).toByte
         }.toArray
     }
